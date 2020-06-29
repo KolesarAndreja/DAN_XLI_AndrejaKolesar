@@ -23,7 +23,6 @@ namespace DAN_XLI
         #region fields
         private string textInput;
         private string copiesInput;
-        private string percentage;
         //validation logic for number of copies
         public int numberOfCopies
         {
@@ -65,54 +64,51 @@ namespace DAN_XLI
         }
         #endregion
 
-        private string[] FileNames()
-        {
-            string[] arr = new string[numberOfCopies];
-            DateTime dateTime = DateTime.Now;
-            StringBuilder sb = new StringBuilder(dateTime.Date.ToString());
-            sb.Append("_" + dateTime.Month.ToString());
-            sb.Append("_" + dateTime.Year.ToString());
-            sb.Append("_" + dateTime.Hour.ToString());
-            sb.Append("_" + dateTime.Minute.ToString());
-            for (int i = 0; i < numberOfCopies; i++)
-            {
-                arr[i] = string.Format(i + sb.ToString());
-            }
-            return arr;
-        }
-
         #region Events of BackgroundWorker class
         private void DoWork(object sender, DoWorkEventArgs e)
         {
-            string fileName;
             int sum = 0;
-            int step = Convert.ToInt32(100 /numberOfCopies);
-            for (int i = 1; i <= numberOfCopies; i ++)
+            if (numberOfCopies != 0)
             {
-                Thread.Sleep(1000);
-                sum = sum + step;
-                DateTime dateTime = DateTime.Now;
-                // Calling ReportProgress() method raises ProgressChanged event
-                // To this method pass the percentage of processing that is complete
-                worker.ReportProgress(sum);
+                string fileName;
 
-                //create file with textInput content
-                fileName = string.Format(i + "." + dateTime.Day.ToString() + "_" + dateTime.Month.ToString() + "_" + dateTime.Year.ToString() + "_" + dateTime.Hour.ToString() + "_" + dateTime.Minute.ToString() + ".txt");
-                using (StreamWriter sw = File.CreateText(fileName))
+                //last step will be bigger for this number if 100%numberOfCopies != 0
+                int lastStep = 100 % numberOfCopies;
+             
+                int step = Convert.ToInt32(100 / numberOfCopies);
+
+                for (int i = 1; i <= numberOfCopies; i++)
                 {
-                    sw.WriteLine(textInput);
-                }
+                    Thread.Sleep(1000);
+                    sum = sum + step;
+                    if(i == numberOfCopies)
+                    {
+                        sum += lastStep;
+                    }
+                    DateTime dateTime = DateTime.Now;
+                    // Calling ReportProgress() method raises ProgressChanged event
+                    // To this method pass the percentage of processing that is complete
+                    worker.ReportProgress(sum);
+
+                    //create file with textInput content
+                    fileName = string.Format(i + "." + dateTime.Day.ToString() + "_" + dateTime.Month.ToString() + "_" + dateTime.Year.ToString() + "_" + dateTime.Hour.ToString() + "_" + dateTime.Minute.ToString() + ".txt");
+                    using (StreamWriter sw = File.CreateText(fileName))
+                    {
+                        sw.WriteLine(textInput);
+                    }
 
 
-                // Check if the cancellation is requested
-                if (worker.CancellationPending)
-                {
-                    // Set Cancel property of DoWorkEventArgs object to true
-                    e.Cancel = true;
-                    // Reset progress percentage to ZERO and return
-                    worker.ReportProgress(0);
-                    return;
+                    // Check if the cancellation is requested
+                    if (worker.CancellationPending)
+                    {
+                        // Set Cancel property of DoWorkEventArgs object to true
+                        e.Cancel = true;
+                        // Reset progress percentage to ZERO and return
+                        worker.ReportProgress(0);
+                        return;
+                    }
                 }
+           
             }
             e.Result = sum;
         }
@@ -157,16 +153,19 @@ namespace DAN_XLI
 
         private void BtnPrint_Click(object sender, RoutedEventArgs e)
         {
-            // Check if the backgroundWorker is already busy running the asynchronous operation
-            if (!worker.IsBusy)
-            {
-                // This method will start the execution asynchronously in the background
-                worker.RunWorkerAsync();
-            }
-            else
-            {
-                label2.Content = "Busy processing, please wait...";
-            }
+    
+                // Check if the backgroundWorker is already busy running the asynchronous operation
+                if (!worker.IsBusy)
+                {
+                    // This method will start the execution asynchronously in the background
+                    worker.RunWorkerAsync();
+                }
+                else
+                {
+                    label2.Content = "Busy processing, please wait...";
+                }
+            
+            
         }
 
         private void BtnCancel_Click(object sender, RoutedEventArgs e)
